@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Slidr – fra idé til ferdig fil</title>
+<style>
+  :root {
+    --bg:#f4f5fa; --surface:#ffffff; --text:#12162b; --muted:#5f6784; --line:#e3e6f0;
+    --accent:#4f46e5; --accent2:#7c3aed; --accent-soft:#eef0ff; --danger:#dc2626; --ok:#059669;
+    --shadow:0 1px 2px rgba(18,22,43,.04), 0 12px 40px rgba(18,22,43,.08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0b0e1a; --surface:#141829; --text:#eef0fb; --muted:#9aa3c2; --line:#252b45;
+      --accent:#818cf8; --accent2:#a78bfa; --accent-soft:#1c2142; --danger:#f87171; --ok:#34d399;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 12px 40px rgba(0,0,0,.35); }
+  }
+  * { box-sizing:border-box }
+  html { -webkit-text-size-adjust:100% }
+  body { margin:0; font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    background:var(--bg); color:var(--text); line-height:1.5; min-height:100vh }
+  .glow { position:fixed; inset:0 0 auto 0; height:420px; z-index:0; pointer-events:none;
+    background:radial-gradient(60% 100% at 50% 0%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 70%) }
+  header, main, footer { position:relative; z-index:1 }
+  header { max-width:880px; margin:0 auto; padding:22px 20px; display:flex; align-items:center; gap:10px }
+  .logo { width:34px; height:34px; border-radius:10px; display:grid; place-items:center; color:#fff;
+    background:linear-gradient(135deg,var(--accent),var(--accent2)) }
+  .brand { font-weight:700; font-size:1.1rem; letter-spacing:-.01em }
+  .hero { max-width:880px; margin:0 auto; padding:24px 20px 8px; text-align:center }
+  .hero h1 { font-size:clamp(1.9rem,5vw,3rem); line-height:1.1; letter-spacing:-.03em; margin:0 0 14px }
+  .hero h1 span { background:linear-gradient(135deg,var(--accent),var(--accent2)); -webkit-background-clip:text; background-clip:text; color:transparent }
+  .hero p { margin:0 auto; max-width:540px; color:var(--muted); font-size:1.05rem }
+  main { max-width:760px; margin:28px auto 0; padding:0 16px 40px }
+  .panel { background:var(--surface); border:1px solid var(--line); border-radius:20px; box-shadow:var(--shadow); padding:8px }
+  .step { padding:20px 20px 22px }
+  .step + .step { border-top:1px solid var(--line) }
+  .step-h { display:flex; align-items:center; gap:10px; margin-bottom:14px }
+  .num { width:26px; height:26px; border-radius:50%; background:var(--accent-soft); color:var(--accent);
+    font-weight:700; font-size:.85rem; display:grid; place-items:center; flex:none }
+  .step-h h2 { font-size:1rem; margin:0; font-weight:650 }
+  .formats { display:grid; grid-template-columns:1fr 1fr; gap:12px }
+  .fmt { position:relative; display:flex; align-items:center; gap:12px; padding:14px; border:1.5px solid var(--line);
+    border-radius:14px; cursor:pointer; background:var(--surface); transition:.15s; text-align:left; font:inherit; color:inherit }
+  .fmt:hover { border-color:color-mix(in srgb,var(--accent) 50%,var(--line)) }
+  .fmt[aria-pressed="true"] { border-color:var(--accent); background:var(--accent-soft); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent) }
+  .fmt .ic { width:40px; height:40px; border-radius:10px; display:grid; place-items:center; color:#fff; font-weight:800; font-size:.8rem; flex:none }
+  .fmt.p .ic { background:#d9482b } .fmt.w .ic { background:#2b6cd9 }
+  .fmt b { display:block; font-size:.95rem } .fmt small { color:var(--muted); font-size:.8rem }
+  textarea { width:100%; min-height:130px; resize:vertical; padding:14px; border:1.5px solid var(--line); border-radius:14px;
+    background:var(--bg); color:var(--text); font:inherit; outline:none; transition:.15s }
+  textarea:focus, input[type=password]:focus { border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent) }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px }
+  .chip { padding:6px 12px; border-radius:999px; border:1px solid var(--line); background:var(--surface); color:var(--muted);
+    font:inherit; font-size:.82rem; cursor:pointer; transition:.15s }
+  .chip:hover { color:var(--accent); border-color:var(--accent) }
+  #drop { margin-top:14px; border:1.5px dashed var(--line); border-radius:14px; padding:20px; text-align:center;
+    color:var(--muted); cursor:pointer; transition:.15s; font-size:.92rem }
+  #drop:hover, #drop.over { border-color:var(--accent); background:var(--accent-soft); color:var(--accent) }
+  #drop svg { display:block; margin:0 auto 6px }
+  #files { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px }
+  .file { display:flex; align-items:center; gap:8px; padding:6px 8px 6px 12px; border-radius:999px; background:var(--accent-soft); font-size:.85rem; max-width:100% }
+  .file span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:220px }
+  .file button { border:none; background:none; color:var(--muted); cursor:pointer; font-size:1.1rem; line-height:1; padding:0 2px }
+  input[type=password] { width:100%; padding:12px 14px; border:1.5px solid var(--line); border-radius:12px; background:var(--bg); color:var(--text); font:inherit; outline:none }
+  .go { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; padding:15px; border:none; border-radius:14px;
+    background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; font:inherit; font-weight:650; font-size:1rem; cursor:pointer; transition:.15s }
+  .go:hover { filter:brightness(1.08) } .go:disabled { opacity:.7; cursor:wait }
+  .spin { width:18px; height:18px; border:2.5px solid rgba(255,255,255,.4); border-top-color:#fff; border-radius:50%; animation:s .8s linear infinite; display:none }
+  .go.busy .spin { display:block } @keyframes s { to { transform:rotate(360deg) } }
+  #msg { margin-top:12px; font-size:.9rem; color:var(--muted); text-align:center; min-height:1.3em }
+  #msg.err { color:var(--danger) }
+  #done { display:none; margin-top:14px; padding:16px; border-radius:14px; border:1px solid color-mix(in srgb,var(--ok) 40%,var(--line));
+    background:color-mix(in srgb,var(--ok) 9%,var(--surface)); align-items:center; gap:12px; justify-content:space-between; flex-wrap:wrap }
+  #done.show { display:flex } #done b { display:block } #done small { color:var(--muted) }
+  #done button { padding:10px 16px; border-radius:10px; border:1px solid var(--ok); background:transparent; color:var(--ok); font:inherit; font-weight:600; cursor:pointer }
+  .trust { display:flex; justify-content:center; flex-wrap:wrap; gap:6px 22px; margin-top:22px; color:var(--muted); font-size:.85rem }
+  footer { text-align:center; color:var(--muted); font-size:.8rem; padding:0 16px 32px }
+  @media (max-width:520px) { .formats { grid-template-columns:1fr } .step { padding:16px 14px 18px } }
+</style>
+</head>
+<body>
+<div class="glow"></div>
+
+<header>
+  <div class="logo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/></svg></div>
+  <div class="brand">Slidr</div>
+</header>
+
+<section class="hero">
+  <h1>Fra idé til <span>ferdig fil</span> på sekunder</h1>
+  <p>Legg inn tekst, bilder eller dokumenter. Få en ferdig PowerPoint eller Word-fil du kan laste ned med én gang.</p>
+</section>
+
+<main>
+  <div class="panel">
+    <div class="step">
+      <div class="step-h"><div class="num">1</div><h2>Hva vil du lage?</h2></div>
+      <div class="formats">
+        <button class="fmt p" data-f="pptx" aria-pressed="true"><div class="ic">PPT</div><div><b>Presentasjon</b><small>PowerPoint (.pptx)</small></div></button>
+        <button class="fmt w" data-f="docx" aria-pressed="false"><div class="ic">DOC</div><div><b>Dokument</b><small>Word (.docx)</small></div></button>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-h"><div class="num">2</div><h2>Gi meg innholdet</h2></div>
+      <textarea id="prompt" placeholder="Skriv hva du ønsker, eller lim inn teksten din her …"></textarea>
+      <div class="chips">
+        <button class="chip" data-t="Lag en presentasjon på ca. 6 lysbilder av dette materialet.">6 lysbilder</button>
+        <button class="chip" data-t="Lag et kort og tydelig sammendrag.">Sammendrag</button>
+        <button class="chip" data-t="Gjør dette om til en profesjonell rapport med klare overskrifter.">Rapport</button>
+        <button class="chip" data-t="Skriv dette om til enklere språk.">Enklere språk</button>
+      </div>
+      <div id="drop">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0-4 4m4-4 4 4M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+        <b>Legg til filer</b> – dra hit eller klikk<br><span style="font-size:.8rem">Bilder, PDF, Word eller tekst · maks ca. 3 MB</span>
+      </div>
+      <input id="picker" type="file" multiple hidden accept="image/*,.pdf,.docx,.txt,.md,.csv">
+      <div id="files"></div>
+    </div>
+
+    <div class="step" id="pwbox" style="display:none">
+      <div class="step-h"><div class="num">🔒</div><h2>Passord</h2></div>
+      <input id="pw" type="password" placeholder="Skriv inn passordet">
+    </div>
+
+    <div class="step">
+      <div class="step-h"><div class="num">3</div><h2>Lag filen</h2></div>
+      <button class="go" id="go"><span class="spin"></span><span id="golabel">Lag fil</span></button>
+      <div id="msg"></div>
+      <div id="done"><div><b id="dname"></b><small>Lastet ned automatisk</small></div><button id="again">Last ned igjen</button></div>
+    </div>
+  </div>
+
+  <div class="trust">
+    <span>✓ Ekte .pptx og .docx</span><span>✓ Ingen kopiering</span><span>✓ Fungerer på mobil</span>
+  </div>
+</main>
+
+<footer>Drevet av Claude</footer>
+
+<script>
+const MAX = 3 * 1024 * 1024;
+let files = [], format = "pptx", last = null;
+const $ = id => document.getElementById(id);
+
+try { const p = localStorage.getItem("pw"); if (p) $("pw").value = p; } catch (e) {}
+
+document.querySelectorAll(".fmt").forEach(b => b.onclick = () => {
+  format = b.dataset.f;
+  document.querySelectorAll(".fmt").forEach(x => x.setAttribute("aria-pressed", x === b));
+});
+document.querySelectorAll(".chip").forEach(c => c.onclick = () => { $("prompt").value = c.dataset.t; $("prompt").focus(); });
+
+function renderFiles() {
+  $("files").innerHTML = "";
+  files.forEach((f, i) => {
+    const d = document.createElement("div"); d.className = "file";
+    const s = document.createElement("span"); s.textContent = f.name;
+    const x = document.createElement("button"); x.textContent = "×"; x.title = "Fjern";
+    x.onclick = () => { files.splice(i, 1); renderFiles(); };
+    d.append(s, x); $("files").appendChild(d);
+  });
+}
+const b64 = f => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result.split(",")[1]); r.onerror = rej; r.readAsDataURL(f); });
+async function add(list) {
+  for (const f of list) {
+    if (files.reduce((s, x) => s + x.size, 0) + f.size > MAX) { msg("Filene er for store til sammen (maks ca. 3 MB).", true); continue; }
+    files.push({ name: f.name, type: f.type || "text/plain", size: f.size, data: await b64(f) });
+  }
+  renderFiles();
+}
+function msg(t, err) { $("msg").textContent = t; $("msg").className = err ? "err" : ""; }
+function save(o) {
+  const bytes = Uint8Array.from(atob(o.base64), c => c.charCodeAt(0));
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([bytes])); a.download = o.filename; a.click();
+}
+
+$("drop").onclick = () => $("picker").click();
+$("picker").onchange = e => { add(e.target.files); e.target.value = ""; };
+$("drop").ondragover = e => { e.preventDefault(); $("drop").classList.add("over"); };
+$("drop").ondragleave = () => $("drop").classList.remove("over");
+$("drop").ondrop = e => { e.preventDefault(); $("drop").classList.remove("over"); add(e.dataTransfer.files); };
+$("again").onclick = () => last && save(last);
+
+const steps = ["Leser innholdet …", "Planlegger strukturen …", "Skriver teksten …", "Bygger filen …"];
+$("go").onclick = async () => {
+  const prompt = $("prompt").value.trim();
+  if (!prompt && !files.length) return msg("Skriv noe eller legg til en fil først.", true);
+  $("go").disabled = true; $("go").classList.add("busy"); $("golabel").textContent = "Jobber …";
+  $("done").classList.remove("show");
+  let i = 0; msg(steps[0]);
+  const t = setInterval(() => { i = Math.min(i + 1, steps.length - 1); msg(steps[i]); }, 6000);
+  try {
+    const res = await fetch("/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-password": $("pw").value },
+      body: JSON.stringify({ prompt, format, files: files.map(({ name, type, data }) => ({ name, type, data })) })
+    });
+    const out = await res.json();
+    if (res.status === 401) { $("pwbox").style.display = "block"; throw new Error("Skriv inn riktig passord og prøv igjen."); }
+    if (!res.ok) throw new Error(out.error || "Noe gikk galt");
+    try { localStorage.setItem("pw", $("pw").value); } catch (e) {}
+    last = out; save(out); msg("");
+    $("dname").textContent = out.filename; $("done").classList.add("show");
+  } catch (e) { msg(e.message, true); }
+  finally { clearInterval(t); $("go").disabled = false; $("go").classList.remove("busy"); $("golabel").textContent = "Lag fil"; }
+};
+</script>
+</body>
+</html>
